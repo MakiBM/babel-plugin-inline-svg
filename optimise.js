@@ -1,27 +1,65 @@
-const Svgo = require('svgo');
+const SVGO = require('svgo');
+const { loopWhile } = require('deasync');
+const deepmerge = require('deepmerge');
 
-module.exports = function optimise(name, content, opts = {}) {
-  const DEFAULTS = {
-    plugins: [
-      {
-        cleanupIDs: {
-          prefix: `${name}-`,
-        },
-      },
-    ],
+const mergeSVGOPlugins = arr =>
+  arr.reduce((acc, curr, i, arr) => {
+    const key = Object.keys(curr)[0];
+    acc[key] = curr[key];
+
+    if (i === arr.length - 1) {
+      return Object.keys(acc).reduce((final, key) => {
+        final.push({ [key]: acc[key] });
+        return final;
+      }, []);
+    }
+
+    return acc;
+  }, {});
+
+module.exports = function optimise(
+  name,
+  content,
+  { plugins = [], ...opts } = {}
+) {
+  const contentWithIDs = content.replace(
+    / +id=\"([0-9a-zA-Z_-]+)"/gi,
+    ` id="${name}-$1"`
+  );
+
+  const DEFAULT_PLUGINS = [
+    {
+      cleanupIDs: false,
+    },
+  ];
+  const config = {
+    ...opts,
+    plugins: mergeSVGOPlugins([...DEFAULT_PLUGINS, ...plugins]),
   };
 
-  const svgo = new Svgo(Object.assign(DEFAULTS, opts));
+  let done = false;
+  let returnValue = null;
+  let error = null;
 
-  // Svgo isn't _really_ async, so let's do it this way:
-  let returnValue;
-  svgo.optimize(content, response => {
-    if (response.error) {
-      throw response.error;
-    } else {
-      returnValue = response.data;
+  const svgo = new SVGO(config);
+
+  svgo.optimize(contentWithIDs).then(
+    ({ data }) => {
+      returnValue = data;
+      done = true;
+    },
+    err => {
+      error = err;
+      done = true;
     }
-  });
+  );
+
+  // Babel wants a sync function, but SVGO.optimize is an async function
+  loopWhile(() => !done);
+
+  if (error) {
+    throw error;
+  }
 
   return returnValue;
 };

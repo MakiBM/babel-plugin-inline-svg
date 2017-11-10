@@ -7,8 +7,7 @@ const optimise = require('./optimise');
 
 const buildOutput = template(`
   var SVG_NAME = SVG_CODE;
-`
-);
+`);
 
 let ignoreRegex;
 

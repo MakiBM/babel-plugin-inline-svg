@@ -22,7 +22,9 @@
   },
   "dependencies": {
     "babel-template": "^6.26.0",
-    "resolve-from": "^3.0.0",
-    "svgo": "^0.7.2"
+    "deasync": "^0.1.12",
+    "deepmerge": "^2.0.1",
+    "resolve-from": "^4.0.0",
+    "svgo": "^1.0.3"
   }
 }

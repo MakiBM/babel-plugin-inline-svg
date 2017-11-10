@@ -4,6 +4,8 @@ Import raw SVG files into your code, optimising with [SVGO](https://github.com/s
 
 ## What it do
 
+### 1. Turns `import` statements into inline SVG strings
+
 So this:
 
 ```js
@@ -13,7 +15,7 @@ import someSvg from 'some-svg.svg';
 Becomes this:
 
 ```js
-var someSvg = '<svg width="50" height="50" viewBox="0 0 50 50" xmlns="http://www.w3.org/2000/svg"><title>home</title><path d="M37.6 24.104l-4.145-4.186v-6.389h-3.93v2.416L26.05 12.43a1.456 1.456 0 0 0-2.07 0L12.43 24.104a1.488 1.488 0 0 0 0 2.092c.284.288.658.431 1.031.431h1.733V38h6.517v-8.475h6.608V38h6.517V26.627h1.77v-.006c.36-.01.72-.145.995-.425a1.488 1.488 0 0 0 0-2.092" fill="#191919" fill-rule="evenodd"/></svg>';
+var someSvg = '<svg width="50" height="50" viewBox="0 0 50 50" xmlns="http://www.w3.org/2000/svg"><title>home</title><path d="M37.6 24.104l-4.145-4.186v-6.389h-3.93v2.416L26.05 12.43a1.456 1.456 0 0 0-2.07 0L12.43 24.104a1.488 1.488 0 0 0 0 2.092c.284.288.658.431 1.031.431h1.733V38h6.517v-8.475h6.608V38h6.517V26.627h1.77v-.006c.36-.01.72-.145.995-.425a1.488 1.488 0 0 0 0-2.092" fill="#191919" fill-rule="evenodd" id="someSvg-someID"/></svg>';
 ```
 
 So you can do something like this maybe:
@@ -31,11 +33,30 @@ const NaughtyUsage = () => (
 );
 ```
 
-Works anywhere you use babel, not just for react.
+### 2. Namespaces `id`’s to prevent conflicts
 
-**The `cleanupIDs` SVGO plugin is enabled by default**, using the import declaration's name as the [`prefix` option](https://github.com/svg/svgo/blob/master/plugins%2FcleanupIDs.js#L12). This means you won't get `id` namespace conflicts across your various svg imports (which can be an issue).
+If you inline a lot of SVGs you might get namespace conflicts, which could well interfere with your CSS and whatnot. This plugin solves that.
 
-If you'd rather not do this, simply pass in your own `cleanupIDs` option when passing in SVGO options to the plugin in your babel options (example below).
+So given this simple `cheese.svg` file:
+
+```svg
+<svg><circle cx="10" cy="10" r="50" id="someCircle"></circle></svg>
+```
+
+Which you then import like so:
+
+```js
+import wheelOfCheese from 'cheese.svg';
+```
+
+You get the following output:
+
+```js
+var wheelOfCheese = '<svg><circle cx="10" cy="10" r="50" id="wheelOfCheese-someCircle"></circle></svg>';
+```
+
+If you want to disable this feature, just pass `{cleanupIDs: true}` as a [plugin option](https://github.com/iest/babel-plugin-inline-svg/blob/master/test.js#L30) to SVGO in your .babelrc file.
+
 
 ## Installation
 
@@ -60,8 +81,10 @@ npm install --save-dev babel-plugin-inline-svg
 #### Options
 
 - *`ignorePattern`* - A pattern that imports will be tested against to selectively ignore imports.
-- *`svgo`* - svgo options (`false` to disable). Example:
+- *`svgo`* - svgo options. Example .babelrc:
+
 ```js
+
 {
   "plugins": [
     [
@@ -70,11 +93,10 @@ npm install --save-dev babel-plugin-inline-svg
         "ignorePattern": /ignoreAThing/,
         "svgo": {
           "plugins": [
+            {"cleanupIDs": false},
             {
               "removeDoctype": true,
-            },
-            // Pass your own "cleanupIDs" option to override the default behaviour if you like:
-            "cleanupIDs": false
+            }
           ]
 
         }
